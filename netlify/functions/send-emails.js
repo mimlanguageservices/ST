@@ -1,5 +1,3 @@
-const sgMail = require('@sendgrid/mail');
-
 exports.handler = async (event, context) => {
   // Enable CORS
   const headers = {
@@ -26,101 +24,52 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    const {
-      studentName,
-      teacherEmail,
-      studentEmail,
-      essayQuestion,
-      originalEssay,
-      correctedEssay
-    } = JSON.parse(event.body);
+    const { originalEssay } = JSON.parse(event.body);
 
-    // You'll need to set SENDGRID_API_KEY as an environment variable in Netlify
-    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+    // Make Claude API call from server (no CORS issues)
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': process.env.CLAUDE_API_KEY, // Set this in Netlify environment variables
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-3-5-sonnet-20241022',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: `Please correct the following essay for grammar and spelling errors with minimum changes to sentence structure. Return only the corrected version without any additional commentary:
 
-    // Email to teacher
-    const teacherMsg = {
-      to: teacherEmail,
-      from: process.env.FROM_EMAIL, // Set this in Netlify environment variables
-      subject: `Essay Submission from ${studentName}`,
-      text: `Student: ${studentName}
-Student Email: ${studentEmail}
+${originalEssay}`
+        }]
+      })
+    });
 
-Question: ${essayQuestion}
+    if (!response.ok) {
+      throw new Error(`Claude API error: ${response.status}`);
+    }
 
-Original Essay:
-${originalEssay}`,
-      html: `
-        <h2>Essay Submission</h2>
-        <p><strong>Student:</strong> ${studentName}</p>
-        <p><strong>Student Email:</strong> ${studentEmail}</p>
-        <p><strong>Question:</strong> ${essayQuestion}</p>
-        <h3>Original Essay:</h3>
-        <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px;">
-          ${originalEssay.replace(/\n/g, '<br>')}
-        </div>
-      `
-    };
-
-    // Email to student
-    const studentMsg = {
-      to: studentEmail,
-      from: process.env.FROM_EMAIL,
-      subject: 'Your Essay Submission - Original and Corrected Version',
-      text: `Hello ${studentName},
-
-Thank you for submitting your essay. Below you'll find both your original submission and a corrected version.
-
-Question: ${essayQuestion}
-
-Your Original Essay:
-${originalEssay}
-
-Corrected Version:
-${correctedEssay}`,
-      html: `
-        <h2>Hello ${studentName},</h2>
-        <p>Thank you for submitting your essay. Below you'll find both your original submission and a corrected version.</p>
-
-        <p><strong>Question:</strong> ${essayQuestion}</p>
-
-        <h3>Your Original Essay:</h3>
-        <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
-          ${originalEssay.replace(/\n/g, '<br>')}
-        </div>
-
-        <h3>Corrected Version:</h3>
-        <div style="background-color: #e8f5e8; padding: 15px; border-radius: 5px;">
-          ${correctedEssay.replace(/\n/g, '<br>')}
-        </div>
-      `
-    };
-
-    // Send both emails
-    await Promise.all([
-      sgMail.send(teacherMsg),
-      sgMail.send(studentMsg)
-    ]);
+    const data = await response.json();
 
     return {
       statusCode: 200,
       headers,
       body: JSON.stringify({
         success: true,
-        message: 'Emails sent successfully'
+        correctedEssay: data.content[0].text
       })
     };
 
   } catch (error) {
-    console.error('Error sending emails:', error);
+    console.error('Error:', error);
 
     return {
       statusCode: 500,
       headers,
       body: JSON.stringify({
         success: false,
-        error: 'Failed to send emails',
-        details: error.message
+        error: error.message
       })
     };
   }

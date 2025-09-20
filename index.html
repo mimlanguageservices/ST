@@ -189,40 +189,47 @@
 
         async function getCorrectedEssay(originalEssay) {
             try {
-                // Use CORS proxy for browser compatibility
-                const apiUrl = window.location.protocol === 'file:' ?
-                    'https://api.anthropic.com/v1/messages' :
-                    'https://cors-anywhere.herokuapp.com/https://api.anthropic.com/v1/messages';
+                // Check if we're on Netlify or local
+                const baseUrl = window.location.hostname === 'localhost' ?
+                    'http://localhost:8888' :
+                    window.location.origin;
 
-                const response = await fetch(apiUrl, {
+                const response = await fetch(`${baseUrl}/.netlify/functions/send-emails`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'x-api-key': CLAUDE_API_KEY,
-                        'anthropic-version': '2023-06-01'
                     },
                     body: JSON.stringify({
-                        model: 'claude-3-sonnet-20240229',
-                        max_tokens: 1000,
-                        messages: [{
-                            role: 'user',
-                            content: `Please correct the following essay for grammar and spelling errors with minimum changes to sentence structure. Return only the corrected version without any additional commentary:
-
-${originalEssay}`
-                        }]
+                        originalEssay: originalEssay
                     })
                 });
 
                 if (!response.ok) {
-                    throw new Error(`Claude API responded with status: ${response.status}`);
+                    throw new Error(`Server error: ${response.status}`);
                 }
 
                 const data = await response.json();
-                return data.content[0].text;
+
+                if (!data.success) {
+                    throw new Error(data.error || 'Unknown error');
+                }
+
+                return data.correctedEssay;
 
             } catch (error) {
-                console.error('Claude API Error:', error);
-                throw new Error('Claude API correction failed. Please use the local version for full functionality.');
+                console.error('API Error:', error);
+
+                // Fallback to manual instructions if server fails
+                return `CORRECTION SERVICE UNAVAILABLE
+
+Please manually correct the following essay:
+
+ORIGINAL ESSAY:
+${originalEssay}
+
+ERROR: ${error.message}
+
+For automatic correction, ensure the backend service is properly configured.`;
             }
         }
 
