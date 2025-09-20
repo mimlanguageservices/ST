@@ -269,7 +269,82 @@ ${correctedEssay}`;
             downloadFile(originalEssay, `${formData.studentName.replace(/\s+/g, '_')}_original_essay.txt`);
             downloadFile(correctedEssayContent, `${formData.studentName.replace(/\s+/g, '_')}_corrected_essay.txt`);
 
+            // Create mailto links for easy email sharing
+            const originalSubject = `Essay Submission: ${formData.studentName}`;
+            const correctedSubject = `Corrected Essay: ${formData.studentName}`;
+
+            const originalMailto = `mailto:?subject=${encodeURIComponent(originalSubject)}&body=${encodeURIComponent(originalEssay)}`;
+            const correctedMailto = `mailto:?subject=${encodeURIComponent(correctedSubject)}&body=${encodeURIComponent(correctedEssayContent)}`;
+
+            // Add email buttons to the page
+            addEmailButtons(originalMailto, correctedMailto);
+
             return { success: true };
+        }
+
+        function addEmailButtons(originalMailto, correctedMailto) {
+            // Remove existing email buttons if they exist
+            const existingButtons = document.getElementById('emailButtons');
+            if (existingButtons) {
+                existingButtons.remove();
+            }
+
+            // Create email buttons container
+            const buttonContainer = document.createElement('div');
+            buttonContainer.id = 'emailButtons';
+            buttonContainer.style.cssText = `
+                margin-top: 20px;
+                text-align: center;
+                padding: 20px;
+                background-color: #f0f8ff;
+                border-radius: 10px;
+                border: 2px solid #4CAF50;
+            `;
+
+            const title = document.createElement('h3');
+            title.textContent = 'Email Essays';
+            title.style.cssText = 'color: #333; margin-bottom: 15px;';
+
+            const originalButton = document.createElement('a');
+            originalButton.href = originalMailto;
+            originalButton.textContent = '📧 Email Original Essay';
+            originalButton.style.cssText = `
+                display: inline-block;
+                margin: 10px;
+                padding: 12px 20px;
+                background-color: #2196F3;
+                color: white;
+                text-decoration: none;
+                border-radius: 5px;
+                font-weight: bold;
+            `;
+
+            const correctedButton = document.createElement('a');
+            correctedButton.href = correctedMailto;
+            correctedButton.textContent = '📧 Email Corrected Essay';
+            correctedButton.style.cssText = `
+                display: inline-block;
+                margin: 10px;
+                padding: 12px 20px;
+                background-color: #4CAF50;
+                color: white;
+                text-decoration: none;
+                border-radius: 5px;
+                font-weight: bold;
+            `;
+
+            const instruction = document.createElement('p');
+            instruction.textContent = 'Click the buttons above to open your email client with pre-filled essay content.';
+            instruction.style.cssText = 'color: #666; font-size: 14px; margin-top: 15px;';
+
+            buttonContainer.appendChild(title);
+            buttonContainer.appendChild(originalButton);
+            buttonContainer.appendChild(correctedButton);
+            buttonContainer.appendChild(instruction);
+
+            // Add to page after the success message
+            const container = document.querySelector('.container');
+            container.appendChild(buttonContainer);
         }
     </script>
 </body>
