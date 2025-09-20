@@ -1,1 +1,7 @@
 .vercel
+node_modules/
+.env
+.netlify/
+dist/
+working classes/
+attempted codes/
