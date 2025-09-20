@@ -110,15 +110,6 @@
                 <input type="text" id="studentName" name="studentName" required>
             </div>
 
-            <div class="form-group">
-                <label for="teacherEmail">Teacher's Email Address:</label>
-                <input type="email" id="teacherEmail" name="teacherEmail" required>
-            </div>
-
-            <div class="form-group">
-                <label for="studentEmail">Student's Email Address:</label>
-                <input type="email" id="studentEmail" name="studentEmail" required>
-            </div>
 
             <div class="form-group">
                 <label>Essay Question:</label>
@@ -169,8 +160,6 @@
             try {
                 const formData = {
                     studentName: document.getElementById('studentName').value,
-                    teacherEmail: document.getElementById('teacherEmail').value,
-                    studentEmail: document.getElementById('studentEmail').value,
                     essayQuestion: document.getElementById('essayQuestion').textContent,
                     essayAnswer: document.getElementById('essayAnswer').value
                 };
@@ -256,46 +245,28 @@ ${originalEssay}`
         }
 
         async function sendEmails(formData, correctedEssay) {
-            // Create email content for teacher
-            const teacherEmail = `Subject: Essay Submission from ${formData.studentName}
+            // Create content for original essay
+            const originalEssay = `Essay by ${formData.studentName}
 
-Student: ${formData.studentName}
-Student Email: ${formData.studentEmail}
 Question: ${formData.essayQuestion}
 
 Original Essay:
 ${formData.essayAnswer}`;
 
-            // Create email content for student
-            const studentEmail = `Subject: Your Essay Submission - Original and Corrected Version
-
-Hello ${formData.studentName},
-
-Thank you for submitting your essay. Below you'll find both your original submission and a corrected version.
+            // Create content for corrected essay
+            const correctedEssayContent = `Essay by ${formData.studentName} - Corrected Version
 
 Question: ${formData.essayQuestion}
 
-Your Original Essay:
+Original Essay:
 ${formData.essayAnswer}
 
 Corrected Version:
 ${correctedEssay}`;
 
-            // Download both emails as text files
-            downloadFile(teacherEmail, `teacher_email_${formData.studentName.replace(/\s+/g, '_')}.txt`);
-            downloadFile(studentEmail, `student_email_${formData.studentName.replace(/\s+/g, '_')}.txt`);
-
-            // Open email client for teacher
-            const teacherMailto = `mailto:${formData.teacherEmail}?subject=${encodeURIComponent('Essay Submission from ' + formData.studentName)}&body=${encodeURIComponent(teacherEmail)}`;
-
-            // Open email client for student
-            const studentMailto = `mailto:${formData.studentEmail}?subject=${encodeURIComponent('Your Essay Submission - Original and Corrected Version')}&body=${encodeURIComponent(studentEmail)}`;
-
-            // Open both email links with a delay
-            window.open(teacherMailto);
-            setTimeout(() => {
-                window.open(studentMailto);
-            }, 1000);
+            // Download both versions as text files
+            downloadFile(originalEssay, `${formData.studentName.replace(/\s+/g, '_')}_original_essay.txt`);
+            downloadFile(correctedEssayContent, `${formData.studentName.replace(/\s+/g, '_')}_corrected_essay.txt`);
 
             return { success: true };
         }
