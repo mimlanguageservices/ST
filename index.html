@@ -189,7 +189,12 @@
 
         async function getCorrectedEssay(originalEssay) {
             try {
-                const response = await fetch('https://api.anthropic.com/v1/messages', {
+                // Use CORS proxy for browser compatibility
+                const apiUrl = window.location.protocol === 'file:' ?
+                    'https://api.anthropic.com/v1/messages' :
+                    'https://cors-anywhere.herokuapp.com/https://api.anthropic.com/v1/messages';
+
+                const response = await fetch(apiUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -217,18 +222,7 @@ ${originalEssay}`
 
             } catch (error) {
                 console.error('Claude API Error:', error);
-
-                // If API fails, provide a basic correction simulation
-                alert('Note: Claude API is not accessible from browser due to CORS restrictions. Using basic correction simulation.');
-
-                // Simple corrections as fallback
-                let corrected = originalEssay
-                    .replace(/\bi\b/g, 'I')
-                    .replace(/\.\s+([a-z])/g, '. $1'.toUpperCase())
-                    .replace(/\s+/g, ' ')
-                    .trim();
-
-                return corrected + '\n\n[Note: This is a basic correction. For full Claude AI correction, use the local version.]';
+                throw new Error('Claude API correction failed. Please use the local version for full functionality.');
             }
         }
 
